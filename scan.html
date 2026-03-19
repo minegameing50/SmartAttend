@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="static/logo.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartAttend — Mark Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060a14;--panel:#0d1526;--border:#162035;--accent:#00e5b4;--accent2:#3d8eff;--danger:#ff6b6b;--text:#edf2ff;--muted:#5c7499;--muted2:#8ba3c7}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,180,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,180,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.card{position:relative;z-index:1;background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:44px 36px;max-width:360px;width:90%;text-align:center;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.icon{font-size:3.5rem;margin-bottom:18px}
+h1{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:10px}
+.cname{font-size:1.05rem;font-weight:600;color:var(--accent);margin-bottom:4px}
+.csub{color:var(--muted2);font-size:.875rem;margin-bottom:20px}
+p{color:var(--muted2);font-size:.875rem;line-height:1.6;margin-bottom:20px}
+.btn{display:inline-block;padding:12px 28px;border-radius:10px;text-decoration:none;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;border:none;transition:opacity .2s;width:100%;margin-bottom:8px}
+.btn-p{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#060a14}
+.btn-s{background:var(--panel);border:1px solid var(--border);color:var(--muted2)}
+.spin{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 20px}
+.ring{width:72px;height:72px;border-radius:50%;background:rgba(0,229,180,.1);border:2px solid rgba(0,229,180,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:1.8rem;animation:ringPop .5s ease}
+@keyframes ringPop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.step{font-size:.78rem;color:var(--muted);margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="card" id="card">
+  <div class="spin"></div>
+  <p class="step" id="step">Checking QR code…</p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getDatabase, ref, get, push, update } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const card = document.getElementById('card');
+const stepEl = document.getElementById('step');
+
+function setStep(msg) { if(stepEl) stepEl.textContent = msg; }
+
+function show(html) { card.innerHTML = html; }
+
+function btnP(href, text) { return `<a href="${href}" class="btn btn-p">${text}</a>`; }
+function btnS(href, text) { return `<a href="${href}" class="btn btn-s">${text}</a>`; }
+
+const token = new URLSearchParams(window.location.search).get('token');
+
+if (!token) {
+  show(`<div class="icon">❌</div><h1>Invalid Link</h1><p>This QR link is broken or missing.</p>${btnS('student.html','Go Home')}`);
+} else {
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      sessionStorage.setItem('scanAfterLogin', window.location.href);
+      show(`<div class="icon">🔐</div><h1>Login Required</h1><p>Sign in first to mark your attendance.</p>${btnP('login.html','Sign In')}`);
+      return;
+    }
+
+    try {
+      // Step 1: get user
+      setStep('Loading your profile…');
+      const userSnap = await get(ref(db, `users/${user.uid}`));
+      if (!userSnap.exists() || userSnap.val().role !== 'student') {
+        show(`<div class="icon">⚠️</div><h1>Students Only</h1><p>Only students can mark attendance.</p>${btnS('faculty.html','Dashboard')}`);
+        return;
+      }
+      const userData = userSnap.val();
+
+      // Step 2: find session by scanning all sessions (fast, no index needed)
+      setStep('Verifying session…');
+      const sessSnap = await get(ref(db, 'sessions'));
+      if (!sessSnap.exists()) {
+        show(`<div class="icon">❌</div><h1>No Sessions Found</h1><p>Ask your faculty to generate a QR code.</p>${btnS('student.html','Go Home')}`);
+        return;
+      }
+
+      // Find matching session
+      let sessKey = null, sess = null;
+      Object.entries(sessSnap.val()).forEach(([k, v]) => {
+        if (v.token === token) { sessKey = k; sess = v; }
+      });
+
+      if (!sessKey) {
+        show(`<div class="icon">❌</div><h1>Invalid QR</h1><p>This QR code is not recognized. Ask your faculty to generate a new one.</p>${btnS('student.html','Go Home')}`);
+        return;
+      }
+
+      // Step 3: check expiry
+      if (!sess.active || new Date() > new Date(sess.expiresAt)) {
+        if (sess.active) await update(ref(db, `sessions/${sessKey}`), { active: false });
+        const clsSnap = await get(ref(db, `classes/${sess.classId}`));
+        const cname = clsSnap.exists() ? clsSnap.val().name : 'Class';
+        show(`<div class="icon">⏰</div><h1>QR Expired</h1><div class="cname">${cname}</div><p>This session has ended. Ask your faculty to generate a new QR.</p>${btnS('student.html','Go Home')}`);
+        return;
+      }
+
+      // Step 4: get class info
+      setStep('Loading class details…');
+      const clsSnap = await get(ref(db, `classes/${sess.classId}`));
+      if (!clsSnap.exists()) {
+        show(`<div class="icon">❌</div><h1>Class Not Found</h1>${btnS('student.html','Go Home')}`);
+        return;
+      }
+      const cls = clsSnap.val();
+
+      // Step 5: check if already marked (scan attendance for this session)
+      setStep('Checking attendance…');
+      const attSnap = await get(ref(db, 'attendance'));
+      if (attSnap.exists()) {
+        const already = Object.values(attSnap.val()).some(a => a.sessionId === sessKey && a.studentId === user.uid);
+        if (already) {
+          show(`<div class="icon">ℹ️</div><h1>Already Marked</h1><div class="cname">${cls.name}</div><div class="csub">${cls.subject}</div><p>Your attendance is already recorded for this session.</p>${btnP('student.html','View My Attendance')}`);
+          return;
+        }
+      }
+
+      // Step 6: auto-enroll if needed
+      setStep('Marking attendance…');
+      const enrollSnap = await get(ref(db, 'enrollments'));
+      const alreadyEnrolled = enrollSnap.exists() &&
+        Object.values(enrollSnap.val()).some(e => e.classId === sess.classId && e.studentId === user.uid);
+      if (!alreadyEnrolled) {
+        await push(ref(db, 'enrollments'), {
+          studentId: user.uid, studentName: userData.name,
+          rollNo: userData.rollNo || '', classId: sess.classId,
+          enrolledAt: new Date().toISOString()
+        });
+      }
+
+      // Step 7: mark attendance ✅
+      await push(ref(db, 'attendance'), {
+        sessionId: sessKey, studentId: user.uid,
+        studentName: userData.name, rollNo: userData.rollNo || '',
+        classId: sess.classId, markedAt: new Date().toISOString()
+      });
+
+      show(`
+        <div class="ring">✅</div>
+        <h1>Attendance Marked!</h1>
+        <div class="cname">${cls.name}</div>
+        <div class="csub">${cls.subject}</div>
+        <p>You are marked <strong style="color:var(--accent)">Present</strong> for today's session.</p>
+        ${btnP('student.html','View My Attendance')}
+      `);
+
+    } catch(err) {
+      show(`<div class="icon">❌</div><h1>Something went wrong</h1><p>${err.message}</p>${btnS('student.html','Go Home')}`);
+    }
+  });
+}
+</script>
+</body>
+</html>

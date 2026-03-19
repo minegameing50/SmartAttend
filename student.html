@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="static/logo.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartAttend — Student</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060a14;--panel:#0d1526;--border:#162035;--accent:#00e5b4;--accent2:#3d8eff;--warn:#ffb547;--danger:#ff6b6b;--text:#edf2ff;--muted:#5c7499;--muted2:#8ba3c7}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+nav{position:sticky;top:0;z-index:100;background:rgba(6,10,20,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-brand{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-brand img{width:34px;height:34px;border-radius:8px;background:#fff;padding:3px;object-fit:contain}
+.btn-out{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.8rem;text-decoration:none;transition:.2s}
+.btn-out:hover{border-color:var(--danger);color:var(--danger)}
+.main{max-width:960px;margin:0 auto;padding:28px 20px}
+h1{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:6px}
+.sub{color:var(--muted2);font-size:.875rem;margin-bottom:24px}
+.enroll-bar{background:var(--panel);border:1px solid rgba(61,142,255,.2);border-radius:14px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.enroll-bar p{color:var(--muted2);font-size:.875rem}
+.btn-e{background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:8px;padding:9px 20px;color:#060a14;font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:opacity .2s}
+.btn-e:hover{opacity:.85}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.cc{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;animation:fadeUp .5s ease both;transition:border-color .2s}
+.cc:hover{border-color:var(--accent)}
+.ct{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.cn{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700}
+.cs{color:var(--muted2);font-size:.78rem;margin-top:3px}
+.cf{color:var(--muted);font-size:.72rem;margin-top:2px}
+.pct{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800}
+.pct.h{color:var(--accent)} .pct.m{color:var(--warn)} .pct.l{color:var(--danger)}
+.pb{height:6px;background:var(--border);border-radius:3px;margin:10px 0 12px;overflow:hidden}
+.pf{height:100%;border-radius:3px}
+.fg{background:linear-gradient(90deg,var(--accent),var(--accent2))} .fy{background:var(--warn)} .fr{background:var(--danger)}
+.meta{font-size:.8rem;color:var(--muted)}
+.tag{display:inline-block;border-radius:6px;padding:3px 10px;font-size:.72rem;font-weight:500;margin-top:10px}
+.tok{background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.2);color:var(--accent)}
+.twarn{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);color:var(--danger)}
+.es{text-align:center;padding:50px 20px;color:var(--muted);font-size:.9rem;grid-column:1/-1}
+.lov{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.spin-sm{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center}
+.mo.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:440px;width:92%;animation:fadeUp .3s ease;max-height:80vh;display:flex;flex-direction:column}
+.modal h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:18px;flex-shrink:0}
+.modal-list{overflow-y:auto;flex:1}
+.co{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;gap:10px}
+.co:hover{border-color:rgba(0,229,180,.3)}
+.co .info .n{font-weight:600;font-size:.9rem}
+.co .info .s{color:var(--muted2);font-size:.78rem}
+.co .info .f{color:var(--muted);font-size:.72rem}
+.eb{padding:7px 14px;border-radius:7px;border:1px solid var(--accent);color:var(--accent);background:transparent;cursor:pointer;font-size:.78rem;font-weight:600;white-space:nowrap;flex-shrink:0;transition:.2s}
+.eb:hover{background:rgba(0,229,180,.1)}
+.eb.done{border-color:var(--muted);color:var(--muted);cursor:default}
+.mc{width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--muted);cursor:pointer;margin-top:14px;flex-shrink:0}
+.mc:hover{border-color:var(--danger);color:var(--danger)}
+.modal-loading{text-align:center;padding:30px;color:var(--muted);font-size:.875rem}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="lov" id="lov"><div class="spin"></div></div>
+<nav>
+  <div class="nav-brand"><img src="static/logo.jpeg" alt="logo">SmartAttend</div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <span style="color:var(--muted2);font-size:.875rem" id="nav-name"></span>
+    <a href="login.html" class="btn-out" id="lout">Sign Out</a>
+  </div>
+</nav>
+<div class="main">
+  <h1>My Attendance</h1>
+  <p class="sub">Track your attendance across all enrolled classes.</p>
+  <div class="enroll-bar">
+    <p>Want to join a class? Browse available classes below.</p>
+    <button class="btn-e" onclick="openEnroll()">+ Enroll in Class</button>
+  </div>
+  <div class="grid" id="grid"><div class="es">Loading your classes…</div></div>
+</div>
+
+<!-- ENROLL MODAL -->
+<div class="mo" id="em">
+  <div class="modal">
+    <h3>Available Classes</h3>
+    <div class="modal-list" id="ac">
+      <div class="modal-loading"><span class="spin-sm"></span>Loading classes…</div>
+    </div>
+    <button class="mc" onclick="closeEnroll()">Close</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getDatabase, ref, get, push } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+let me = null;
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return location.href = 'login.html';
+  const snap = await get(ref(db, `users/${user.uid}`));
+  if (!snap.exists() || snap.val().role !== 'student') return location.href = 'login.html';
+  me = { uid: user.uid, ...snap.val() };
+  document.getElementById('nav-name').textContent = me.name;
+  document.getElementById('lov').style.display = 'none';
+
+  // Handle QR scan redirect
+  const scanRedirect = sessionStorage.getItem('scanAfterLogin');
+  if (scanRedirect) { sessionStorage.removeItem('scanAfterLogin'); location.href = scanRedirect; return; }
+
+  loadMyClasses();
+});
+
+document.getElementById('lout').onclick = async (e) => {
+  e.preventDefault(); await signOut(auth); location.href = 'login.html';
+};
+
+async function loadMyClasses() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<div class="es">Loading…</div>';
+  try {
+    // Fetch everything in parallel
+    const [enrollSnap, sessSnap, attSnap, clsSnap] = await Promise.all([
+      get(ref(db, 'enrollments')),
+      get(ref(db, 'sessions')),
+      get(ref(db, 'attendance')),
+      get(ref(db, 'classes'))
+    ]);
+
+    if (!enrollSnap.exists()) {
+      grid.innerHTML = '<div class="es">Not enrolled in any classes yet.<br>Click "+ Enroll in Class" to get started.</div>';
+      return;
+    }
+
+    // Filter my enrollments
+    const myEnrollments = Object.values(enrollSnap.val()).filter(e => e.studentId === me.uid);
+    if (!myEnrollments.length) {
+      grid.innerHTML = '<div class="es">Not enrolled in any classes yet.<br>Click "+ Enroll in Class" to get started.</div>';
+      return;
+    }
+
+    const sessions = sessSnap.exists() ? Object.values(sessSnap.val()) : [];
+    const attendance = attSnap.exists() ? Object.values(attSnap.val()) : [];
+    const classes = clsSnap.exists() ? clsSnap.val() : {};
+
+    const cards = myEnrollments.map(e => {
+      const cls = classes[e.classId];
+      if (!cls) return '';
+      const clsSess = sessions.filter(s => s.classId === e.classId);
+      const myAtt = attendance.filter(a => a.classId === e.classId && a.studentId === me.uid);
+      const present = myAtt.length, total = clsSess.length;
+      const pct = total > 0 ? Math.round(present / total * 100) : 0;
+      const pc = pct >= 75 ? 'h' : pct >= 50 ? 'm' : 'l';
+      const pf = pct >= 75 ? 'fg' : pct >= 50 ? 'fy' : 'fr';
+      return `<div class="cc">
+        <div class="ct">
+          <div>
+            <div class="cn">${cls.name}</div>
+            <div class="cs">${cls.subject}</div>
+            <div class="cf">👨‍🏫 ${cls.facultyName || 'Faculty'}</div>
+          </div>
+          <div class="pct ${pc}">${pct}%</div>
+        </div>
+        <div class="pb"><div class="pf ${pf}" style="width:${pct}%"></div></div>
+        <div class="meta">${present} present out of ${total} sessions</div>
+        ${pct >= 75
+          ? '<span class="tag tok">✅ Good Standing</span>'
+          : '<span class="tag twarn">⚠️ Below 75% — attend more</span>'}
+      </div>`;
+    }).filter(Boolean);
+
+    grid.innerHTML = cards.length ? cards.join('') : '<div class="es">No class data found.</div>';
+  } catch(err) {
+    grid.innerHTML = `<div class="es">Error loading classes: ${err.message}</div>`;
+  }
+}
+
+window.openEnroll = async () => {
+  document.getElementById('em').classList.add('open');
+  const ac = document.getElementById('ac');
+  ac.innerHTML = '<div class="modal-loading"><span class="spin-sm"></span>Loading classes…</div>';
+  try {
+    const [clsSnap, enrollSnap] = await Promise.all([
+      get(ref(db, 'classes')),
+      get(ref(db, 'enrollments'))
+    ]);
+
+    if (!clsSnap.exists()) {
+      ac.innerHTML = '<div class="modal-loading">No classes available yet.<br>Ask your faculty to create classes first.</div>';
+      return;
+    }
+
+    // Get my enrolled class IDs
+    const myClassIds = enrollSnap.exists()
+      ? Object.values(enrollSnap.val()).filter(e => e.studentId === me.uid).map(e => e.classId)
+      : [];
+
+    ac.innerHTML = Object.entries(clsSnap.val()).map(([id, cls]) => {
+      const enrolled = myClassIds.includes(id);
+      return `<div class="co">
+        <div class="info">
+          <div class="n">${cls.name}</div>
+          <div class="s">${cls.subject}</div>
+          <div class="f">👨‍🏫 ${cls.facultyName || 'Faculty'}</div>
+        </div>
+        <button class="eb ${enrolled ? 'done' : ''}" onclick="enroll('${id}', this)" ${enrolled ? 'disabled' : ''}>
+          ${enrolled ? 'Enrolled ✓' : 'Enroll'}
+        </button>
+      </div>`;
+    }).join('');
+  } catch(err) {
+    ac.innerHTML = `<div class="modal-loading">Error: ${err.message}</div>`;
+  }
+};
+
+window.enroll = async (classId, btn) => {
+  btn.textContent = 'Enrolling…'; btn.disabled = true;
+  try {
+    const clsSnap = await get(ref(db, `classes/${classId}`));
+    await push(ref(db, 'enrollments'), {
+      studentId: me.uid, studentName: me.name,
+      rollNo: me.rollNo || '', classId,
+      enrolledAt: new Date().toISOString()
+    });
+    btn.textContent = 'Enrolled ✓'; btn.classList.add('done');
+    loadMyClasses();
+  } catch(err) {
+    btn.textContent = 'Error — retry'; btn.disabled = false;
+  }
+};
+
+window.closeEnroll = () => document.getElementById('em').classList.remove('open');
+document.getElementById('em').addEventListener('click', e => { if (e.target.id === 'em') closeEnroll(); });
+</script>
+</body>
+</html>
