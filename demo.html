@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="static/logo.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartAttend — Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060a14;--panel:#0d1526;--panel2:#0a1020;--border:#162035;--accent:#00e5b4;--accent2:#3d8eff;--warn:#ffb547;--danger:#ff6b6b;--text:#edf2ff;--muted:#5c7499;--muted2:#8ba3c7}
+html,body{min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+.bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,229,180,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,180,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0}
+.orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(0,229,180,.08),transparent 70%);top:-200px;left:-200px}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(61,142,255,.07),transparent 70%);bottom:-100px;right:-100px}
+
+/* ── PICKER SCREEN ── */
+#picker{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+.picker-brand{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.picker-brand img{width:48px;height:48px;border-radius:12px;background:#fff;padding:5px;object-fit:contain;box-shadow:0 0 24px rgba(0,229,180,.2)}
+.picker-brand span{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.picker-tag{background:rgba(255,181,71,.1);border:1px solid rgba(255,181,71,.3);color:#ffb547;border-radius:20px;padding:5px 16px;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:36px}
+.picker-title{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:800;text-align:center;margin-bottom:10px;line-height:1.1}
+.picker-sub{color:var(--muted2);font-size:.95rem;text-align:center;margin-bottom:48px;max-width:400px}
+.role-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:780px;width:100%}
+.role-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:32px 24px;cursor:pointer;transition:all .25s;text-align:center;position:relative;overflow:hidden}
+.role-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s}
+.role-card:hover{transform:translateY(-6px)}
+.role-card.student:hover{border-color:var(--accent);box-shadow:0 0 40px rgba(0,229,180,.15)}
+.role-card.student::before{background:linear-gradient(135deg,rgba(0,229,180,.04),transparent)}
+.role-card.faculty:hover{border-color:var(--accent2);box-shadow:0 0 40px rgba(61,142,255,.15)}
+.role-card.faculty::before{background:linear-gradient(135deg,rgba(61,142,255,.04),transparent)}
+.role-card.admin:hover{border-color:#ffb547;box-shadow:0 0 40px rgba(255,181,71,.15)}
+.role-card.admin::before{background:linear-gradient(135deg,rgba(255,181,71,.04),transparent)}
+.role-card:hover::before{opacity:1}
+.role-icon{font-size:3rem;margin-bottom:16px;display:block}
+.role-name{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:8px}
+.role-card.student .role-name{color:var(--accent)}
+.role-card.faculty .role-name{color:var(--accent2)}
+.role-card.admin .role-name{color:#ffb547}
+.role-desc{color:var(--muted2);font-size:.85rem;line-height:1.6;margin-bottom:20px}
+.role-features{list-style:none;text-align:left;display:flex;flex-direction:column;gap:7px;margin-bottom:24px}
+.role-features li{font-size:.8rem;color:var(--muted2);display:flex;align-items:center;gap:8px}
+.role-features li::before{content:'→';font-weight:700;flex-shrink:0}
+.role-card.student .role-features li::before{color:var(--accent)}
+.role-card.faculty .role-features li::before{color:var(--accent2)}
+.role-card.admin .role-features li::before{color:#ffb547}
+.enter-btn{width:100%;padding:11px;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:.875rem;cursor:pointer;transition:opacity .2s}
+.role-card.student .enter-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#060a14}
+.role-card.faculty .enter-btn{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#060a14}
+.role-card.admin .enter-btn{background:linear-gradient(135deg,#ffb547,#ff6b6b);color:#060a14}
+.enter-btn:hover{opacity:.88}
+.back-link{margin-top:32px;color:var(--muted);font-size:.85rem;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .2s}
+.back-link:hover{color:var(--accent)}
+
+/* ── SHARED DASHBOARD ── */
+#dashboard{display:none;min-height:100vh;position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:100;background:rgba(6,10,20,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;gap:8px}
+.nav-brand{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;flex-shrink:0}
+.nav-brand img{width:30px;height:30px;border-radius:8px;background:#fff;padding:3px;object-fit:contain}
+.nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.nav-user{color:var(--muted2);font-size:.78rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-demo-tag{background:rgba(255,181,71,.1);border:1px solid rgba(255,181,71,.25);color:#ffb547;border-radius:20px;padding:3px 8px;font-size:.65rem;font-weight:700;white-space:nowrap}
+.btn-switch{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer;font-size:.72rem;transition:.2s;white-space:nowrap}
+.btn-switch:hover{border-color:var(--accent);color:var(--accent)}
+.main{max-width:1200px;margin:0 auto;padding:28px 20px 60px}
+h1{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:6px}
+.sub{color:var(--muted2);font-size:.875rem;margin-bottom:28px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:28px}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px;animation:fadeUp .5s ease both}
+.sl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.sv{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800}
+.cg{color:var(--accent)} .cb{color:var(--accent2)} .cy{color:var(--warn)} .cr{color:var(--danger)}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-hdr h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700}
+.badge{background:rgba(0,229,180,.1);color:var(--accent);border:1px solid rgba(0,229,180,.2);border-radius:20px;padding:3px 10px;font-size:.72rem}
+.classes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;margin-bottom:32px}
+.cc{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;animation:fadeUp .5s ease both;transition:border-color .2s,transform .2s}
+.cc:hover{border-color:var(--accent);transform:translateY(-2px)}
+.cc.active-class{border-color:var(--accent);box-shadow:0 0 20px rgba(0,229,180,.1)}
+.ct{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.cn{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700}
+.cs{color:var(--muted2);font-size:.8rem;margin-top:3px}
+.pp{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;padding:5px 12px;border-radius:8px}
+.pp.h{background:rgba(0,229,180,.1);color:var(--accent)}
+.pp.m{background:rgba(255,181,71,.1);color:var(--warn)}
+.pp.l{background:rgba(255,107,107,.1);color:var(--danger)}
+.class-status{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;padding:4px 10px;border-radius:20px;margin-bottom:12px}
+.class-status.ongoing{background:rgba(0,229,180,.1);color:var(--accent);border:1px solid rgba(0,229,180,.2)}
+.class-status.ended{background:rgba(100,100,100,.1);color:var(--muted);border:1px solid var(--border)}
+.sdot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.sdot.blink{animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.chart-row{display:flex;align-items:center;gap:16px;margin:10px 0}
+.cw{width:80px;height:80px;flex-shrink:0}
+.leg{display:flex;flex-direction:column;gap:7px}
+.li{display:flex;align-items:center;gap:7px;font-size:.8rem}
+.ld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.lv{font-family:'Syne',sans-serif;font-weight:700;min-width:20px}
+.ll{color:var(--muted2)}
+.ldiv{border-top:1px solid var(--border);padding-top:5px;margin-top:2px;font-size:.72rem;color:var(--muted)}
+.pb{height:5px;background:var(--border);border-radius:3px;margin-bottom:14px;overflow:hidden}
+.pf{height:100%;border-radius:3px}
+.fg{background:linear-gradient(90deg,var(--accent),var(--accent2))} .fy{background:var(--warn)} .fr{background:var(--danger)}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-start{padding:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:9px;color:#060a14;font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;grid-column:1/-1;transition:opacity .2s}
+.btn-start:hover{opacity:.85}
+.btn-qr{padding:10px;background:rgba(61,142,255,.1);border:1px solid rgba(61,142,255,.2);border-radius:9px;color:var(--accent2);font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:.2s}
+.btn-qr:hover{background:rgba(61,142,255,.2)}
+.btn-end-cls{padding:10px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:9px;color:var(--danger);font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:.2s}
+.btn-end-cls:hover{background:rgba(255,107,107,.2)}
+
+/* TABLE */
+.tbox{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:28px}
+.thdr{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.thdr h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700}
+.tabs{display:flex;gap:7px;flex-wrap:wrap}
+.tab{padding:6px 14px;border-radius:7px;cursor:pointer;font-size:.82rem;border:1px solid var(--border);color:var(--muted2);background:transparent;transition:all .18s}
+.tab.active{background:rgba(0,229,180,.1);border-color:rgba(0,229,180,.3);color:var(--accent)}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 18px;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:12px 18px;font-size:.85rem;border-bottom:1px solid rgba(22,32,53,.5)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.rn{font-family:'Syne',sans-serif;font-size:.78rem;color:var(--accent2)}
+.ap{font-family:'Syne',sans-serif;font-weight:700}
+.ap.h{color:var(--accent)} .ap.m{color:var(--warn)} .ap.l{color:var(--danger)}
+.mb{height:4px;background:var(--border);border-radius:2px;margin-top:4px;width:80px;overflow:hidden}
+.mf{height:100%;border-radius:2px}
+.status-present{color:var(--accent);font-size:.75rem;font-weight:600}
+.status-absent{color:var(--danger);font-size:.75rem;font-weight:600}
+
+/* QR MODAL */
+.mo{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);align-items:center;justify-content:center}
+.mo.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:32px;max-width:400px;width:92%;text-align:center;animation:fadeUp .3s ease}
+.modal h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.msub{color:var(--muted2);font-size:.83rem;margin-bottom:18px}
+.tlabel{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:block}
+.topts{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+.tb{padding:7px 15px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--muted2);cursor:pointer;font-size:.83rem;transition:all .18s}
+.tb.sel,.tb:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,229,180,.08)}
+.crow{display:flex;align-items:center;gap:7px;justify-content:center;margin-top:9px}
+.crow input{width:68px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-size:.875rem;text-align:center;outline:none}
+.crow input:focus{border-color:var(--accent)}
+.crow span{color:var(--muted2);font-size:.83rem}
+.btn-gen{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:9px;color:#060a14;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;margin-top:18px;transition:opacity .2s}
+.btn-gen:hover{opacity:.88}
+.qrd{display:none}
+#qr-box{display:flex;justify-content:center;margin-bottom:12px}
+#qr-box canvas,#qr-box img{border-radius:10px;border:4px solid white}
+.cdw{position:relative;width:76px;height:76px;margin:12px auto 0}
+.cdr{transform:rotate(-90deg)}
+.rbg{fill:none;stroke:var(--border);stroke-width:6}
+.rfg{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;stroke-dasharray:201;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke .4s}
+.cdt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cdn{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;line-height:1}
+.cds{font-size:.58rem;color:var(--muted);margin-top:2px}
+.expb{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:var(--danger);border-radius:8px;padding:9px;font-size:.8rem;margin-top:10px;display:none}
+.mbtns{display:flex;gap:9px;margin-top:16px}
+.bcl{flex:1;padding:10px;background:var(--panel2);border:1px solid var(--border);border-radius:9px;color:var(--muted);cursor:pointer}
+.bcl:hover{border-color:var(--danger);color:var(--danger)}
+
+/* STUDENT VIEW */
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.att-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:22px;animation:fadeUp .5s ease both;transition:border-color .2s}
+.att-card:hover{border-color:var(--accent)}
+.tag{display:inline-block;border-radius:6px;padding:3px 10px;font-size:.72rem;font-weight:500;margin-top:10px}
+.tok{background:rgba(0,229,180,.1);border:1px solid rgba(0,229,180,.2);color:var(--accent)}
+.twarn{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);color:var(--danger)}
+.scan-info{background:rgba(0,229,180,.06);border:1px solid rgba(0,229,180,.15);border-radius:10px;padding:14px 16px;margin-top:16px;font-size:.82rem;color:var(--muted2);line-height:1.6}
+.scan-info strong{color:var(--accent)}
+
+/* ADMIN VIEW */
+.admin-tabs{display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid var(--border)}
+.admin-tab{padding:10px 18px;border:none;background:transparent;color:var(--muted2);font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.admin-panel{display:none}
+.admin-panel.active{display:block}
+.form-card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:28px;margin-bottom:20px}
+.form-card h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:5px}
+.form-card p{color:var(--muted2);font-size:.82rem;margin-bottom:20px}
+.form-group{margin-bottom:14px}
+.flabel{display:block;font-size:.73rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-weight:500}
+.finput{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s}
+.finput:focus{border-color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:540px){.form-row{grid-template-columns:1fr}}
+.btn-fake-submit{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#060a14;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .2s}
+.btn-fake-submit:hover{opacity:.88}
+.fake-success{background:rgba(0,229,180,.08);border:1px solid rgba(0,229,180,.25);color:var(--accent);border-radius:10px;padding:11px 16px;font-size:.82rem;margin-top:12px;display:none}
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.sc-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;transition:border-color .2s}
+.sc-card:hover{border-color:var(--accent)}
+.sc-name{font-weight:600;font-size:.9rem;margin-bottom:2px}
+.sc-roll{color:var(--accent2);font-size:.72rem;margin-bottom:8px}
+.sc-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:5px}
+.sc-fill{height:100%;border-radius:2px}
+.sc-pct{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800}
+.absent-item{background:var(--panel2);border:1px solid rgba(255,107,107,.15);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.absent-tag{background:rgba(255,107,107,.1);color:var(--danger);border-radius:6px;padding:3px 10px;font-size:.72rem;font-weight:600}
+
+/* LIVE FEED */
+.live-item{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;animation:fadeUp .4s ease}
+
+.es{text-align:center;padding:40px;color:var(--muted);font-size:.875rem}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- ── ROLE PICKER ─────────────────────────────── -->
+<div id="picker">
+  <div class="picker-brand">
+    <img src="static/logo.jpeg" alt="SmartAttend">
+    <span>SmartAttend</span>
+  </div>
+  <div class="picker-tag">✨ Interactive Demo</div>
+  <h1 class="picker-title">Choose your role<br>to explore the demo</h1>
+  <p class="picker-sub">All data is simulated. No account or Firebase needed.</p>
+
+  <div class="role-cards">
+    <div class="role-card student" onclick="enterDemo('student')">
+      <span class="role-icon">🎓</span>
+      <div class="role-name">Student</div>
+      <p class="role-desc">See how students track their attendance and scan QR codes.</p>
+      <ul class="role-features">
+        <li>View attendance per class</li>
+        <li>See present / absent stats</li>
+        <li>Attendance % with warnings</li>
+        <li>Scan QR simulation</li>
+      </ul>
+      <button class="enter-btn">Enter as Student →</button>
+    </div>
+    <div class="role-card faculty" onclick="enterDemo('faculty')">
+      <span class="role-icon">👨‍🏫</span>
+      <div class="role-name">Faculty</div>
+      <p class="role-desc">Generate QR codes, start classes, and monitor live attendance.</p>
+      <ul class="role-features">
+        <li>Start & end classes</li>
+        <li>Generate timed QR codes</li>
+        <li>Live countdown ring</li>
+        <li>Pie charts & analytics</li>
+      </ul>
+      <button class="enter-btn">Enter as Faculty →</button>
+    </div>
+    <div class="role-card admin" onclick="enterDemo('admin')">
+      <span class="role-icon">🛡️</span>
+      <div class="role-name">Admin</div>
+      <p class="role-desc">Manage accounts, view all students and monitor the institution.</p>
+      <ul class="role-features">
+        <li>Create accounts & classes</li>
+        <li>View all student records</li>
+        <li>Absent today list</li>
+        <li>System-wide stats</li>
+      </ul>
+      <button class="enter-btn">Enter as Admin →</button>
+    </div>
+  </div>
+
+  <a href="index.html" class="back-link">← Back to Home</a>
+</div>
+
+<!-- ── DASHBOARD ──────────────────────────────── -->
+<div id="dashboard">
+  <nav>
+    <div class="nav-brand"><img src="static/logo.jpeg" alt="logo">SmartAttend</div>
+    <div class="nav-right">
+      <span class="nav-user" id="nav-user"></span>
+      <span class="nav-demo-tag">✨ DEMO</span>
+      <button class="btn-switch" onclick="switchRole()">Switch Role</button>
+    </div>
+  </nav>
+  <div class="main" id="main-content"></div>
+</div>
+
+<!-- QR MODAL -->
+<div class="mo" id="qr-mo">
+  <div class="modal">
+    <h3 id="qr-title">Generate QR</h3>
+    <p class="msub" id="qr-sub">Set how long students can scan</p>
+    <div id="ts">
+      <span class="tlabel">QR Valid Duration</span>
+      <div class="topts">
+        <button class="tb sel" onclick="sd(2,this)">2 min</button>
+        <button class="tb" onclick="sd(5,this)">5 min</button>
+        <button class="tb" onclick="sd(10,this)">10 min</button>
+        <button class="tb" onclick="sd(15,this)">15 min</button>
+      </div>
+      <div class="crow">
+        <span>Custom:</span>
+        <input type="number" id="cm" min="1" max="120" placeholder="—" oninput="cd2(this)">
+        <span>minutes</span>
+      </div>
+      <button class="btn-gen" onclick="genQR()">⚡ Generate QR Code</button>
+    </div>
+    <div class="qrd" id="qrd">
+      <div id="qr-box"></div>
+      <div class="cdw">
+        <svg class="cdr" viewBox="0 0 72 72" width="76" height="76">
+          <circle class="rbg" cx="36" cy="36" r="32"/>
+          <circle class="rfg" id="rfg" cx="36" cy="36" r="32"/>
+        </svg>
+        <div class="cdt"><span class="cdn" id="cdn">--</span><span class="cds" id="cds">sec</span></div>
+      </div>
+      <div class="expb" id="expb">⏰ QR Expired</div>
+    </div>
+    <div class="mbtns">
+      <button class="bcl" onclick="closeQR()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── FAKE DATA ──────────────────────────────────────────
+const FAKE = {
+  student: {
+    name: 'Priya Sharma',
+    rollNo: '2026CS042',
+    classes: [
+      { id:1, name:'CS-A', subject:'Data Structures', faculty:'Prof. Aanchal', sessions:18, present:16 },
+      { id:2, name:'CS-A', subject:'Python Programming', faculty:'Prof. Aanchal', sessions:15, present:14 },
+      { id:3, name:'CS-A', subject:'Machine Learning', faculty:'Prof. Mehta', sessions:12, present:8 },
+      { id:4, name:'CS-A', subject:'Database Systems', faculty:'Prof. Rajan', sessions:10, present:10 },
+    ],
+    recentScans: [
+      { class:'Data Structures', time:'Today, 10:32 AM' },
+      { class:'Python Programming', time:'Today, 12:15 PM' },
+      { class:'Database Systems', time:'Yesterday, 2:10 PM' },
+    ]
+  },
+  faculty: {
+    name: 'Prof. Aanchal Verma',
+    classes: [
+      { id:1, name:'CS-A', subject:'Data Structures', students:32, sessions:18, present:28, active:true },
+      { id:2, name:'CS-B', subject:'Python Programming', students:28, sessions:15, present:22, active:false },
+      { id:3, name:'MCA-A', subject:'Web Development', students:24, sessions:10, present:20, active:false },
+    ],
+    studentRows: [
+      { name:'Priya Sharma', roll:'2026CS042', present:16, total:18 },
+      { name:'Rahul Gupta', roll:'2026CS011', present:18, total:18 },
+      { name:'Sneha Patel', roll:'2026CS023', present:12, total:18 },
+      { name:'Arjun Singh', roll:'2026CS035', present:15, total:18 },
+      { name:'Divya Rao', roll:'2026CS067', present:9, total:18 },
+      { name:'Vikram Nair', roll:'2026CS089', present:17, total:18 },
+    ],
+    liveScans: [
+      { name:'Rahul Gupta', roll:'2026CS011', time:'10:32 AM' },
+      { name:'Priya Sharma', roll:'2026CS042', time:'10:34 AM' },
+      { name:'Vikram Nair', roll:'2026CS089', time:'10:35 AM' },
+      { name:'Arjun Singh', roll:'2026CS035', time:'10:36 AM' },
+    ]
+  },
+  admin: {
+    name: 'Admin',
+    stats: { users:48, students:42, faculty:5, classes:12, todayPresent:31, totalRecords:840 },
+    students: [
+      { name:'Priya Sharma', roll:'2026CS042', pct:89 },
+      { name:'Rahul Gupta', roll:'2026CS011', pct:100 },
+      { name:'Sneha Patel', roll:'2026CS023', pct:67 },
+      { name:'Arjun Singh', roll:'2026CS035', pct:83 },
+      { name:'Divya Rao', roll:'2026CS067', pct:50 },
+      { name:'Vikram Nair', roll:'2026CS089', pct:94 },
+      { name:'Ananya Joshi', roll:'2026CS054', pct:78 },
+      { name:'Karan Mehta', roll:'2026CS016', pct:61 },
+    ],
+    absent: [
+      { name:'Divya Rao', roll:'2026CS067', classes:'Data Structures, Python' },
+      { name:'Sneha Patel', roll:'2026CS023', classes:'Machine Learning' },
+      { name:'Karan Mehta', roll:'2026CS016', classes:'Data Structures' },
+    ]
+  }
+};
+
+let currentRole = null;
+let selDur = 2;
+let cdTimer = null;
+let curClassId = null;
+let classStates = { 1: true, 2: false, 3: false }; // id → isActive
+const CIRC = 201;
+
+// ── ENTER DEMO ────────────────────────────────────────
+function enterDemo(role) {
+  currentRole = role;
+  document.getElementById('picker').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('nav-user').textContent = FAKE[role].name;
+  renderDashboard(role);
+}
+
+function switchRole() {
+  clearInterval(cdTimer);
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('picker').style.display = 'flex';
+  // Destroy charts
+  Chart.helpers && Chart.instances && Object.values(Chart.instances).forEach(c => c.destroy());
+}
+
+// ── RENDER DASHBOARD ──────────────────────────────────
+function renderDashboard(role) {
+  const main = document.getElementById('main-content');
+  if (role === 'student') main.innerHTML = renderStudent();
+  else if (role === 'faculty') main.innerHTML = renderFaculty();
+  else if (role === 'admin') main.innerHTML = renderAdmin();
+  // Draw charts after render
+  setTimeout(() => drawCharts(role), 100);
+}
+
+// ── STUDENT ───────────────────────────────────────────
+function renderStudent() {
+  const d = FAKE.student;
+  const totalSess = d.classes.reduce((a,c)=>a+c.sessions,0);
+  const totalPres = d.classes.reduce((a,c)=>a+c.present,0);
+  const overall = Math.round(totalPres/totalSess*100);
+  const overallCol = overall>=75?'var(--accent)':overall>=50?'var(--warn)':'var(--danger)';
+
+  const cards = d.classes.map((c,i) => {
+    const pct = Math.round(c.present/c.sessions*100);
+    const pc = pct>=75?'h':pct>=50?'m':'l';
+    const pf = pct>=75?'fg':pct>=50?'fy':'fr';
+    return `<div class="att-card" style="animation-delay:${i*.08}s">
+      <div class="ct">
+        <div><div class="cn">${c.name}</div><div class="cs">${c.subject}</div><div style="color:var(--muted);font-size:.72rem;margin-top:2px">👨‍🏫 ${c.faculty}</div></div>
+        <div class="pp ${pc}">${pct}%</div>
+      </div>
+      <div class="pb"><div class="pf ${pf}" style="width:${pct}%"></div></div>
+      <div style="font-size:.8rem;color:var(--muted)">${c.present} present out of ${c.sessions} sessions</div>
+      ${pct>=75?'<span class="tag tok">✅ Good Standing</span>':'<span class="tag twarn">⚠️ Below 75% — attend more</span>'}
+    </div>`;
+  }).join('');
+
+  const scans = d.recentScans.map(s => `
+    <div class="live-item">
+      <div><div style="font-weight:600;font-size:.875rem">${s.class}</div></div>
+      <div style="color:var(--accent);font-size:.75rem;font-weight:600">✅ Present · ${s.time}</div>
+    </div>`).join('');
+
+  return `
+    <h1>My Attendance</h1>
+    <p class="sub">Welcome back, ${d.name} · Roll No: ${d.rollNo}</p>
+    <div class="stats-row">
+      <div class="stat-card"><div class="sl">Enrolled Classes</div><div class="sv cb">${d.classes.length}</div></div>
+      <div class="stat-card"><div class="sl">Overall Attendance</div><div class="sv" style="color:${overallCol}">${overall}%</div></div>
+      <div class="stat-card"><div class="sl">Sessions Present</div><div class="sv cg">${totalPres}</div></div>
+      <div class="stat-card"><div class="sl">Total Sessions</div><div class="sv cy">${totalSess}</div></div>
+    </div>
+    <div class="scan-info">
+      📱 <strong>How to mark attendance:</strong> When your faculty shows a QR code, open your phone camera and scan it. Your attendance is recorded instantly — no app needed!
+    </div>
+    <div style="height:20px"></div>
+    <div class="att-grid">${cards}</div>
+    <div class="tbox" style="margin-top:24px">
+      <div class="thdr"><h2>Recent Scans</h2></div>
+      <div style="padding:16px">${scans}</div>
+    </div>`;
+}
+
+// ── FACULTY ───────────────────────────────────────────
+function renderFaculty() {
+  const d = FAKE.faculty;
+  const avgPct = Math.round(d.classes.reduce((a,c)=>a+Math.round(c.present/c.students*100),0)/d.classes.length);
+
+  const cards = d.classes.map((c,i) => {
+    const pct = Math.round(c.present/c.students*100);
+    const pc = pct>=75?'h':pct>=50?'m':'l';
+    const pf = pct>=75?'fg':pct>=50?'fy':'fr';
+    const absent = c.students - c.present;
+    const isActive = classStates[c.id];
+    return `<div class="cc ${isActive?'active-class':''}" id="card-${c.id}" style="animation-delay:${i*.08}s">
+      <div class="ct">
+        <div><div class="cn">${c.name}</div><div class="cs">${c.subject}</div></div>
+        <div class="pp ${pc}">${pct}%</div>
+      </div>
+      <div class="class-status ${isActive?'ongoing':'ended'}">
+        <span class="sdot ${isActive?'blink':''}"></span>
+        ${isActive?'Class In Progress':'Class Ended'}
+      </div>
+      <div class="chart-row">
+        <div class="cw"><canvas id="pie-${c.id}" width="80" height="80"></canvas></div>
+        <div class="leg">
+          <div class="li"><div class="ld" style="background:#00e5b4"></div><span class="lv">${c.present}</span><span class="ll">Present</span></div>
+          <div class="li"><div class="ld" style="background:#ff6b6b"></div><span class="lv">${absent}</span><span class="ll">Absent</span></div>
+          <div class="ldiv">${c.sessions} sessions · ${c.students} students</div>
+        </div>
+      </div>
+      <div class="pb"><div class="pf ${pf}" style="width:${pct}%"></div></div>
+      <div class="btn-row" id="btnrow-${c.id}">
+        ${!isActive
+          ? `<button class="btn-start" onclick="startClass(${c.id},'${c.name}','${c.subject}')">▶ Start Class</button>`
+          : `<button class="btn-qr" style="display:block" onclick="openQR(${c.id},'${c.name}','${c.subject}')">🔄 Generate QR</button>
+             <button class="btn-end-cls" style="display:block" onclick="endClass(${c.id})">⛔ End Class</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+
+  const rows = d.studentRows.map(s => {
+    const pct = Math.round(s.present/s.total*100);
+    const pc = pct>=75?'h':pct>=50?'m':'l';
+    const col = pct>=75?'#00e5b4':pct>=50?'#ffb547':'#ff6b6b';
+    return `<tr>
+      <td>${s.name}</td>
+      <td><span class="rn">${s.roll}</span></td>
+      <td>${s.present}/${s.total}</td>
+      <td><span class="ap ${pc}">${pct}%</span><div class="mb"><div class="mf" style="width:${pct}%;background:${col}"></div></div></td>
+    </tr>`;
+  }).join('');
+
+  const liveItems = d.liveScans.map(s => `
+    <div class="live-item">
+      <div><div style="font-weight:600;font-size:.875rem">${s.name}</div><div style="color:var(--muted2);font-size:.75rem">${s.roll}</div></div>
+      <div style="text-align:right"><div class="status-present">✅ Present</div><div style="color:var(--muted);font-size:.72rem">${s.time}</div></div>
+    </div>`).join('');
+
+  return `
+    <h1>Faculty Dashboard</h1>
+    <p class="sub">Welcome back, ${d.name}</p>
+    <div class="stats-row">
+      <div class="stat-card"><div class="sl">My Classes</div><div class="sv cb">${d.classes.length}</div></div>
+      <div class="stat-card"><div class="sl">Total Students</div><div class="sv cg">${d.classes.reduce((a,c)=>a+c.students,0)}</div></div>
+      <div class="stat-card"><div class="sl">Avg Attendance</div><div class="sv cy">${avgPct}%</div></div>
+      <div class="stat-card"><div class="sl">Today's Scans</div><div class="sv cg">${d.liveScans.length}</div></div>
+    </div>
+    <div class="sec-hdr"><h2>Your Classes</h2><span class="badge">${d.classes.length} classes</span></div>
+    <div class="classes-grid">${cards}</div>
+    <div class="tbox">
+      <div class="thdr"><h2>Student Attendance — CS-A</h2></div>
+      <table><thead><tr><th>Student</th><th>Roll No.</th><th>Present</th><th>Attendance</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </div>
+    <div class="tbox">
+      <div class="thdr">
+        <h2>📡 Live Feed — Today</h2>
+        <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--accent)"><span style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;animation:blink 1.2s infinite"></span>LIVE</div>
+      </div>
+      <div style="padding:16px">${liveItems}</div>
+    </div>`;
+}
+
+// ── ADMIN ─────────────────────────────────────────────
+function renderAdmin() {
+  const d = FAKE.admin;
+  const s = d.stats;
+
+  const studentCards = d.students.map(st => {
+    const col = st.pct>=75?'#00e5b4':st.pct>=50?'#ffb547':'#ff6b6b';
+    return `<div class="sc-card">
+      <div class="sc-name">${st.name}</div>
+      <div class="sc-roll">${st.roll}</div>
+      <div class="sc-bar"><div class="sc-fill" style="width:${st.pct}%;background:${col}"></div></div>
+      <div class="sc-pct" style="color:${col}">${st.pct}%</div>
+    </div>`;
+  }).join('');
+
+  const absentItems = d.absent.map(a => `
+    <div class="absent-item">
+      <div><div style="font-weight:600;font-size:.875rem">${a.name} <span style="font-size:.72rem;color:var(--accent2)">(${a.roll})</span></div>
+      <div style="color:var(--muted2);font-size:.75rem;margin-top:2px">${a.classes}</div></div>
+      <span class="absent-tag">Absent</span>
+    </div>`).join('');
+
+  return `
+    <h1>Admin Dashboard</h1>
+    <p class="sub">System overview for SmartAttend Demo Institution</p>
+    <div class="stats-row">
+      <div class="stat-card"><div class="sl">Total Users</div><div class="sv cb">${s.users}</div></div>
+      <div class="stat-card"><div class="sl">Students</div><div class="sv cg">${s.students}</div></div>
+      <div class="stat-card"><div class="sl">Faculty</div><div class="sv cy">${s.faculty}</div></div>
+      <div class="stat-card"><div class="sl">Classes</div><div class="sv cb">${s.classes}</div></div>
+      <div class="stat-card"><div class="sl">Present Today</div><div class="sv cg">${s.todayPresent}</div></div>
+      <div class="stat-card"><div class="sl">Total Records</div><div class="sv cy">${s.totalRecords}</div></div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchAdminTab('create',this)">👤 Create Account</button>
+      <button class="admin-tab" onclick="switchAdminTab('students',this)">🎓 Students</button>
+      <button class="admin-tab" onclick="switchAdminTab('absent',this)">⚠️ Absent Today</button>
+    </div>
+
+    <div class="admin-panel active" id="ap-create">
+      <div class="form-card">
+        <h2>Create New Account</h2>
+        <p>Demo: form is interactive but not connected to a real database.</p>
+        <div class="form-row">
+          <div class="form-group"><label class="flabel">Full Name</label><input class="finput" placeholder="e.g. Prof. Sharma"></div>
+          <div class="form-group" id="roll-demo-group"><label class="flabel">Roll No.</label><input class="finput" placeholder="e.g. 2026CS001"></div>
+        </div>
+        <div class="form-group">
+          <label class="flabel">Role</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <button class="tb sel" style="border-radius:10px;padding:10px" onclick="demoRoleSelect('student',this)">Student</button>
+            <button class="tb" style="border-radius:10px;padding:10px" onclick="demoRoleSelect('faculty',this)">Faculty</button>
+            <button class="tb" style="border-radius:10px;padding:10px" onclick="demoRoleSelect('admin',this)">Admin</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="flabel">Email</label><input class="finput" placeholder="user@college.in"></div>
+          <div class="form-group"><label class="flabel">Password</label><input class="finput" type="password" placeholder="Min 6 characters"></div>
+        </div>
+        <button class="btn-fake-submit" onclick="fakeSubmit()">Create Account</button>
+        <div class="fake-success" id="fake-success">✅ Account created successfully! (Demo only — not saved)</div>
+      </div>
+    </div>
+
+    <div class="admin-panel" id="ap-students">
+      <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+        <h2 style="margin-bottom:0">All Students <span style="color:var(--muted);font-size:.8rem;font-weight:400">(${d.students.length} total)</span></h2>
+      </div>
+      <div class="student-grid">${studentCards}</div>
+    </div>
+
+    <div class="admin-panel" id="ap-absent">
+      <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+        <h2 style="margin-bottom:0">Absent Today <span style="color:var(--danger);font-size:.8rem;font-weight:400">(${d.absent.length} students)</span></h2>
+      </div>
+      ${absentItems}
+    </div>`;
+}
+
+// ── DRAW CHARTS ───────────────────────────────────────
+function drawCharts(role) {
+  if (role !== 'faculty') return;
+  FAKE.faculty.classes.forEach(c => {
+    const canvas = document.getElementById('pie-' + c.id);
+    if (!canvas) return;
+    const absent = c.students - c.present;
+    new Chart(canvas, {
+      type: 'doughnut',
+      data: { datasets: [{ data: [c.present, absent], backgroundColor: ['#00e5b4','#ff6b6b'], borderColor: '#0d1526', borderWidth: 3 }] },
+      options: { cutout: '65%', plugins: { legend: { display: false } }, animation: { duration: 800 } }
+    });
+  });
+}
+
+// ── ADMIN HELPERS ─────────────────────────────────────
+function switchAdminTab(name, btn) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('ap-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+function demoRoleSelect(role, btn) {
+  document.querySelectorAll('#ap-create .tb').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('roll-demo-group').style.display = role === 'student' ? 'block' : 'none';
+}
+function fakeSubmit() {
+  const el = document.getElementById('fake-success');
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+// ── FACULTY CLASS CONTROLS ────────────────────────────
+function startClass(id, name, subject) {
+  classStates[id] = true;
+  curClassId = id;
+  document.getElementById('qr-title').textContent = `${name} — ${subject}`;
+  document.getElementById('qr-sub').textContent = 'Set how long students can scan';
+  document.getElementById('ts').style.display = 'block';
+  document.getElementById('qrd').style.display = 'none';
+  document.getElementById('expb').style.display = 'none';
+  document.getElementById('qr-box').innerHTML = '';
+  document.getElementById('qr-mo').classList.add('open');
+  // Update card immediately
+  updateCardState(id, true, name, subject);
+}
+function openQR(id, name, subject) {
+  curClassId = id;
+  document.getElementById('qr-title').textContent = `${name} — ${subject}`;
+  document.getElementById('qr-sub').textContent = 'Set QR duration for late students';
+  document.getElementById('ts').style.display = 'block';
+  document.getElementById('qrd').style.display = 'none';
+  document.getElementById('expb').style.display = 'none';
+  document.getElementById('qr-box').innerHTML = '';
+  document.getElementById('qr-mo').classList.add('open');
+}
+function endClass(id) {
+  if (!confirm('End this class now?')) return;
+  classStates[id] = false;
+  const cls = FAKE.faculty.classes.find(c=>c.id===id);
+  updateCardState(id, false, cls.name, cls.subject);
+  closeQR();
+}
+function updateCardState(id, isActive, name, subject) {
+  const card = document.getElementById('card-' + id);
+  if (!card) return;
+  const statusEl = card.querySelector('.class-status');
+  const btnRow = document.getElementById('btnrow-' + id);
+  if (statusEl) {
+    statusEl.className = `class-status ${isActive?'ongoing':'ended'}`;
+    statusEl.innerHTML = `<span class="sdot ${isActive?'blink':''}"></span>${isActive?'Class In Progress':'Class Ended'}`;
+  }
+  if (btnRow) {
+    btnRow.innerHTML = !isActive
+      ? `<button class="btn-start" onclick="startClass(${id},'${name}','${subject}')">▶ Start Class</button>`
+      : `<button class="btn-qr" style="display:block" onclick="openQR(${id},'${name}','${subject}')">🔄 Generate QR</button>
+         <button class="btn-end-cls" style="display:block" onclick="endClass(${id})">⛔ End Class</button>`;
+  }
+  if (isActive) card.classList.add('active-class');
+  else card.classList.remove('active-class');
+}
+
+// ── QR MODAL CONTROLS ─────────────────────────────────
+function sd(m, btn) {
+  selDur = m;
+  document.querySelectorAll('.tb').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('cm').value = '';
+}
+function cd2(inp) {
+  const v = parseInt(inp.value);
+  if (v > 0) { selDur = v; document.querySelectorAll('.tb').forEach(b => b.classList.remove('sel')); }
+}
+function closeQR() {
+  clearInterval(cdTimer);
+  document.getElementById('qr-mo').classList.remove('open');
+}
+function genQR() {
+  document.getElementById('ts').style.display = 'none';
+  document.getElementById('qrd').style.display = 'block';
+  document.getElementById('qr-sub').textContent = `Active for ${selDur} min — show to students`;
+  document.getElementById('qr-box').innerHTML = '';
+  // Generate fake QR with demo URL
+  new QRCode(document.getElementById('qr-box'), {
+    text: window.location.href + '?demo=scan&token=demo-' + Date.now(),
+    width: 180, height: 180, colorDark: '#000', colorLight: '#fff'
+  });
+  startCountdown(selDur * 60);
+}
+function startCountdown(totalSecs) {
+  clearInterval(cdTimer);
+  let rem = totalSecs;
+  const ring = document.getElementById('rfg');
+  const numEl = document.getElementById('cdn');
+  const sufEl = document.getElementById('cds');
+  function tick() {
+    if (rem <= 0) {
+      clearInterval(cdTimer);
+      numEl.textContent = '0'; sufEl.textContent = 'sec';
+      ring.style.stroke = '#ff6b6b';
+      ring.style.strokeDashoffset = CIRC;
+      document.getElementById('expb').style.display = 'block';
+      return;
+    }
+    const m = Math.floor(rem/60), s = rem%60;
+    numEl.textContent = m>0?`${m}:${s.toString().padStart(2,'0')}`:s;
+    sufEl.textContent = m>0?'min':'sec';
+    const p = rem/totalSecs;
+    ring.style.strokeDashoffset = CIRC*(1-p);
+    ring.style.stroke = p>.5?'#00e5b4':p>.25?'#ffb547':'#ff6b6b';
+    rem--;
+  }
+  tick(); cdTimer = setInterval(tick, 1000);
+}
+document.getElementById('qr-mo').addEventListener('click', e => { if (e.target.id==='qr-mo') closeQR(); });
+</script>
+</body>
+</html>
