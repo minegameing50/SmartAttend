@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartAttend — Mark Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060a14;--panel:#0d1526;--border:#162035;--accent:#00e5b4;--accent2:#3d8eff;--danger:#ff6b6b;--text:#edf2ff;--muted:#5c7499;--muted2:#8ba3c7}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,180,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,180,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.card{position:relative;z-index:1;background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:44px 36px;max-width:360px;width:90%;text-align:center;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.icon{font-size:3.5rem;margin-bottom:18px}
+h1{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:10px}
+.cname{font-size:1.05rem;font-weight:600;color:var(--accent);margin-bottom:4px}
+.csub{color:var(--muted2);font-size:.875rem;margin-bottom:20px}
+p{color:var(--muted2);font-size:.875rem;line-height:1.6;margin-bottom:20px}
+.btn{display:inline-block;padding:12px 28px;border-radius:10px;text-decoration:none;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;border:none;transition:opacity .2s,transform .1s}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn-p{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#060a14;display:block;margin-bottom:8px}
+.btn-s{background:var(--panel);border:1px solid var(--border);color:var(--muted2)}
+.btn-s:hover{border-color:var(--accent2);color:var(--accent2)}
+.spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
+.ring{width:72px;height:72px;border-radius:50%;background:rgba(0,229,180,.1);border:2px solid rgba(0,229,180,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:1.8rem;animation:ringPop .5s ease}
+@keyframes ringPop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="card" id="card">
+  <div class="spin"></div>
+  <p>Verifying QR code…</p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getDatabase, ref, get, push, update, query, orderByChild, equalTo }
+  from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const card = document.getElementById('card');
+
+function show(icon, title, cname, csub, body, btns) {
+  card.innerHTML = `
+    ${icon.startsWith('ring') ? `<div class="ring">✅</div>` : `<div class="icon">${icon}</div>`}
+    <h1>${title}</h1>
+    ${cname ? `<div class="cname">${cname}</div>` : ''}
+    ${csub ? `<div class="csub">${csub}</div>` : ''}
+    ${body ? `<p>${body}</p>` : ''}
+    ${btns}
+  `;
+}
+
+const token = new URLSearchParams(window.location.search).get('token');
+if (!token) {
+  show('❌','Invalid Link','','','This QR link is broken or missing.',`<a href="student.html" class="btn btn-s">Go Home</a>`);
+} else {
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      sessionStorage.setItem('scanAfterLogin', window.location.href);
+      show('🔐','Login Required','','','Sign in first to mark your attendance.',`<a href="login.html" class="btn btn-p">Sign In</a>`);
+      return;
+    }
+    // Get user profile
+    const userSnap = await get(ref(db,`users/${user.uid}`));
+    if (!userSnap.exists() || userSnap.val().role !== 'student') {
+      show('⚠️','Students Only','','','Only students can mark attendance.',`<a href="faculty.html" class="btn btn-s">Dashboard</a>`);
+      return;
+    }
+    const userData = userSnap.val();
+
+    // Find session by token
+    const sessQ = query(ref(db,'sessions'), orderByChild('token'), equalTo(token));
+    const sessSnap = await get(sessQ);
+    if (!sessSnap.exists()) {
+      show('❌','Invalid QR','','','This QR code is not recognized.',`<a href="student.html" class="btn btn-s">Go Home</a>`);
+      return;
+    }
+    const [sessKey, sess] = Object.entries(sessSnap.val())[0];
+
+    // Check expiry
+    if (!sess.active || new Date() > new Date(sess.expiresAt)) {
+      if (sess.active) await update(ref(db,`sessions/${sessKey}`),{active:false});
+      const clsSnap = await get(ref(db,`classes/${sess.classId}`));
+      const cname = clsSnap.exists() ? clsSnap.val().name : 'Class';
+      show('⏰','QR Expired',cname,'','This session has ended. Ask faculty to generate a new QR.',`<a href="student.html" class="btn btn-s">Go Home</a>`);
+      return;
+    }
+
+    // Get class
+    const clsSnap = await get(ref(db,`classes/${sess.classId}`));
+    if (!clsSnap.exists()) { show('❌','Class Not Found','','','',`<a href="student.html" class="btn btn-s">Go Home</a>`); return; }
+    const cls = clsSnap.val();
+
+    // Already marked?
+    const attQ = query(ref(db,'attendance'), orderByChild('sessionId'), equalTo(sessKey));
+    const attSnap = await get(attQ);
+    if (attSnap.exists()) {
+      const already = Object.values(attSnap.val()).some(a => a.studentId === user.uid);
+      if (already) {
+        show('ℹ️','Already Marked',cls.name,cls.subject,'Your attendance is already recorded for this session.',`<a href="student.html" class="btn btn-p">View My Attendance</a>`);
+        return;
+      }
+    }
+
+    // Auto-enroll if not enrolled
+    const enrollQ = query(ref(db,'enrollments'), orderByChild('studentId'), equalTo(user.uid));
+    const enrollSnap = await get(enrollQ);
+    const alreadyEnrolled = enrollSnap.exists() && Object.values(enrollSnap.val()).some(e => e.classId === sess.classId);
+    if (!alreadyEnrolled) {
+      await push(ref(db,'enrollments'), {
+        studentId: user.uid, studentName: userData.name,
+        rollNo: userData.rollNo || '', classId: sess.classId,
+        enrolledAt: new Date().toISOString()
+      });
+    }
+
+    // ✅ Mark attendance
+    await push(ref(db,'attendance'), {
+      sessionId: sessKey, studentId: user.uid,
+      studentName: userData.name, rollNo: userData.rollNo || '',
+      classId: sess.classId, markedAt: new Date().toISOString()
+    });
+
+    show('ring','Attendance Marked!',cls.name,cls.subject,`You are marked <strong style="color:var(--accent)">Present</strong> for today's session.`,`<a href="student.html" class="btn btn-p">View My Attendance</a>`);
+  });
+}
+</script>
+</body>
+</html>
