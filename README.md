@@ -157,7 +157,7 @@ users/
 
 - Only Admin can create accounts — no self-registration on login page
 - QR tokens are UUID v4, single-use per student per session
-- Sessions expire after faculty-set timer automatically
+- Sessions expire when faculty end the class
 - Enrollment verified before marking attendance (no gate-crashing)
 - Role-based routing — wrong role gets redirected to login
 - Manual attendance logged with faculty name + timestamp
