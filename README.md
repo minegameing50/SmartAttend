@@ -16,6 +16,11 @@
 
 ---
 
+## 📁 Assets 
+⬇️ **[SmartAttend](https://github.com/minegameing50/SmartAttend/releases/tag/SmartAttendv_1.0)**
+
+---
+
 ## 📌 Problem Statement
 
 Traditional attendance in colleges wastes 5–10 minutes per class on manual roll calls, is prone to proxy attendance, and provides no real-time insights to faculty or administrators.
