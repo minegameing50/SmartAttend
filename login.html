@@ -7,6 +7,7 @@
 <title>SmartAttend — Login</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script type="module" src="firebase-config.js"></script>
+<script type="module" src="login.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#060a14;--panel:#0d1526;--border:#162035;--accent:#00e5b4;--accent2:#3d8eff;--text:#edf2ff;--muted:#5c7499;--muted2:#8ba3c7;--danger:#ff6b6b}
@@ -111,7 +112,7 @@ input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,180,.1)}
         </button>
       </div>
     </div>
-    <button class="btn" id="login-btn">Sign In →</button>
+    <button class="btn" id="login-btn" onclick="login()">Sign In →</button>
     <button class="btn-secondary" id="back-btn" type="button" onclick="window.location.href='index.html'">Back</button>
   </div>
 </div>
