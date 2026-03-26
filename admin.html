@@ -605,5 +605,15 @@ window.loadAbsent = async () => {
   }).join('');
 };
 </script>
+<script type="module">
+import { auth } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+window.logout = function () {
+  signOut(auth).then(() => {
+    window.location.href = "login.html";
+  });
+};
+</script>
 </body>
 </html>
