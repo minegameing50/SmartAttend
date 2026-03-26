@@ -36,6 +36,18 @@ p{color:var(--muted2);font-size:.875rem;line-height:1.6;margin-bottom:20px}
 </div>
 
 <script type="module">
+import { biometricLogin } from "./static/biometric.js";
+
+async function startScan() {
+  const ok = await biometricLogin();
+
+  if (!ok) return;
+
+  // your existing scan code continues here
+  alert("Access granted");
+}
+
+window.startScan = startScan;
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { getDatabase, ref, get, push, update } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
