@@ -231,32 +231,23 @@ let faceStream = null;
 let biometricProfile = {};
 let biometricRequired = false;
 let pendingRedirect = null;
-
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return location.href = 'login.html';
-  const snap = await get(ref(db, `users/${user.uid}`));
-  if (!snap.exists() || snap.val().role !== 'student') return location.href = 'login.html';
-  me = { uid: user.uid, ...snap.val() };
-  biometricProfile = await getBiometricProfile(db, me.uid);
-  biometricRequired = !hasAnyBiometric(biometricProfile);
-  document.getElementById('nav-name').textContent = me.name;
-  document.getElementById('lov').style.display = 'none';
-  refreshBiometricSetupUI();
-  if (biometricRequired) {
-    document.getElementById('bio-setup-mo').classList.add('open');
-  }
-
-  const scanRedirect = sessionStorage.getItem('scanAfterLogin');
-  if (scanRedirect && !biometricRequired) {
-    sessionStorage.removeItem('scanAfterLogin');
-    location.href = scanRedirect;
+  if (!user) {
+    window.location.href = "login.html";
     return;
   }
-  if (scanRedirect && biometricRequired) {
-    pendingRedirect = scanRedirect;
-  }
 
-  loadMyClasses();
+  console.log("Logged in:", user.email);
+
+  try {
+    // your existing code here
+  } catch (e) {
+    console.error("ERROR:", e);
+    alert("Error loading data");
+    
+    // 🔥 IMPORTANT fallback
+    window.location.href = "login.html";
+  }
 });
 
 document.getElementById('lout').onclick = async (e) => {
