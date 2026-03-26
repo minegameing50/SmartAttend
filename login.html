@@ -146,7 +146,7 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { getDatabase, ref, get }
   from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { auth } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
