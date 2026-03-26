@@ -5,7 +5,9 @@
 <link rel="icon" type="image/jpeg" href="static/logo.jpeg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartAttend - Mark Attendance</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#060a14;--panel:#0d1526;--border:#162035;--accent:#00e5b4;--accent2:#3d8eff;--danger:#ff6b6b;--text:#edf2ff;--muted:#5c7499;--muted2:#8ba3c7}
@@ -28,26 +30,21 @@ p{color:var(--muted2);font-size:.875rem;line-height:1.6;margin-bottom:20px}
 .step{font-size:.78rem;color:var(--muted);margin-bottom:6px}
 </style>
 </head>
+
 <body>
+
 <div class="bg-grid"></div>
+
 <div class="card" id="card">
   <div class="spin"></div>
   <p class="step" id="step">Checking QR code...</p>
 </div>
 
 <script type="module">
+
+// 🔥 BIOMETRIC IMPORT
 import { biometricLogin } from "./static/biometric.js";
 
-async function startScan() {
-  const ok = await biometricLogin();
-
-  if (!ok) return;
-
-  // your existing scan code continues here
-  alert("Access granted");
-}
-
-window.startScan = startScan;
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { getDatabase, ref, get, push, update } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
@@ -56,6 +53,7 @@ import { firebaseConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
+
 const card = document.getElementById('card');
 const stepEl = document.getElementById('step');
 const token = new URLSearchParams(window.location.search).get('token');
@@ -74,80 +72,100 @@ function getSessionMethods(sess) {
   return ['qr'];
 }
 
+// ❌ INVALID TOKEN
 if (!token) {
   show(`<div class="icon">❌</div><h1>Invalid Link</h1><p>This QR link is broken or missing.</p>${btnS('student.html','Go Home')}`);
-} else {
+}
+
+// ✅ MAIN FLOW
+else {
   onAuthStateChanged(auth, async (user) => {
+
     if (!user) {
       sessionStorage.setItem('scanAfterLogin', window.location.href);
       show(`<div class="icon">🔐</div><h1>Login Required</h1><p>Sign in first to mark your attendance.</p>${btnP('login.html','Sign In')}`);
       return;
     }
 
+    // 🔥 BIOMETRIC CHECK (MAIN FIX)
+    const ok = await biometricLogin();
+    if (!ok) {
+      show(`<div class="icon">🔒</div><h1>Verification Failed</h1><p>Biometric authentication is required.</p>${btnS('student.html','Go Home')}`);
+      return;
+    }
+
     try {
       setStep('Loading your profile...');
       const userSnap = await get(ref(db, `users/${user.uid}`));
+
       if (!userSnap.exists() || userSnap.val().role !== 'student') {
         show(`<div class="icon">⚠️</div><h1>Students Only</h1><p>Only students can mark attendance from a class QR.</p>${btnS('faculty.html','Dashboard')}`);
         return;
       }
+
       const userData = userSnap.val();
 
       setStep('Verifying session...');
       const sessSnap = await get(ref(db, 'sessions'));
+
       if (!sessSnap.exists()) {
         show(`<div class="icon">❌</div><h1>No Sessions Found</h1><p>Ask your faculty to generate a fresh session.</p>${btnS('student.html','Go Home')}`);
         return;
       }
 
       let sessKey = null, sess = null;
+
       Object.entries(sessSnap.val()).forEach(([k, v]) => {
         if (v.token === token) { sessKey = k; sess = v; }
       });
 
       if (!sessKey) {
-        show(`<div class="icon">❌</div><h1>Invalid QR</h1><p>This QR code is not recognized. Ask your faculty to generate a new one.</p>${btnS('student.html','Go Home')}`);
+        show(`<div class="icon">❌</div><h1>Invalid QR</h1><p>This QR code is not recognized.</p>${btnS('student.html','Go Home')}`);
         return;
       }
 
       if (!getSessionMethods(sess).includes('qr')) {
-        show(`<div class="icon">⚠️</div><h1>QR Disabled</h1><p>This class session is no longer accepting QR attendance.</p>${btnS('student.html','Go Home')}`);
+        show(`<div class="icon">⚠️</div><h1>QR Disabled</h1><p>This session is not accepting QR.</p>${btnS('student.html','Go Home')}`);
         return;
       }
 
       if (!sess.active || !sess.expiresAt || new Date() > new Date(sess.expiresAt)) {
         if (sess.active) await update(ref(db, `sessions/${sessKey}`), { active: false });
-        const clsSnap = await get(ref(db, `classes/${sess.classId}`));
-        const cname = clsSnap.exists() ? clsSnap.val().name : 'Class';
-        show(`<div class="icon">⏰</div><h1>Session Expired</h1><div class="cname">${cname}</div><p>This attendance session has ended. Ask your faculty to open a new one.</p>${btnS('student.html','Go Home')}`);
+
+        show(`<div class="icon">⏰</div><h1>Session Expired</h1><p>This session has ended.</p>${btnS('student.html','Go Home')}`);
         return;
       }
 
-      setStep('Loading class details...');
+      setStep('Loading class...');
       const clsSnap = await get(ref(db, `classes/${sess.classId}`));
+
       if (!clsSnap.exists()) {
         show(`<div class="icon">❌</div><h1>Class Not Found</h1>${btnS('student.html','Go Home')}`);
         return;
       }
+
       const cls = clsSnap.val();
 
       setStep('Checking attendance...');
       const attSnap = await get(ref(db, 'attendance'));
+
       if (attSnap.exists()) {
         const already = Object.values(attSnap.val()).some(a => a.sessionId === sessKey && a.studentId === user.uid);
         if (already) {
-          show(`<div class="icon">ℹ️</div><h1>Already Marked</h1><div class="cname">${cls.name}</div><div class="csub">${cls.subject}</div><p>Your attendance is already recorded for this session.</p>${btnP('student.html','View My Attendance')}`);
+          show(`<div class="icon">ℹ️</div><h1>Already Marked</h1><div class="cname">${cls.name}</div><p>Already recorded.</p>${btnP('student.html','View Attendance')}`);
           return;
         }
       }
 
       setStep('Checking enrollment...');
       const enrollSnap = await get(ref(db, 'enrollments'));
+
       const enrolled = enrollSnap.exists() && Object.values(enrollSnap.val()).some(
         e => e.classId === sess.classId && e.studentId === user.uid
       );
+
       if (!enrolled) {
-        show(`<div class="icon">🚫</div><h1>Not Enrolled</h1><div class="cname">${cls.name}</div><div class="csub">${cls.subject}</div><p>You are not enrolled in this class.</p>${btnS('student.html','Go Home')}`);
+        show(`<div class="icon">🚫</div><h1>Not Enrolled</h1><p>You are not enrolled.</p>${btnS('student.html','Go Home')}`);
         return;
       }
 
@@ -159,22 +177,24 @@ if (!token) {
         classId: sess.classId,
         markedAt: new Date().toISOString(),
         method: 'qr',
-        verifiedBy: 'qr'
+        verifiedBy: 'biometric'
       });
 
       show(`
         <div class="ring">✅</div>
         <h1>Attendance Marked</h1>
         <div class="cname">${cls.name}</div>
-        <div class="csub">${cls.subject}</div>
-        <p>Your QR attendance is now recorded for this session.</p>
-        ${btnP('student.html','View My Attendance')}
+        <p>Successfully recorded.</p>
+        ${btnP('student.html','View Attendance')}
       `);
+
     } catch (err) {
-      show(`<div class="icon">❌</div><h1>Something went wrong</h1><p>${err.message}</p>${btnS('student.html','Go Home')}`);
+      show(`<div class="icon">❌</div><h1>Error</h1><p>${err.message}</p>${btnS('student.html','Go Home')}`);
     }
   });
 }
+
 </script>
+
 </body>
 </html>
