@@ -1,4 +1,16 @@
 // biometric.js
+import { db } from "./firebase-config.js";
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+async function markAttendance(studentId) {
+  await addDoc(collection(db, "attendance"), {
+    studentId: studentId,
+    timestamp: serverTimestamp(),
+    status: "present"
+  });
+
+  alert("Attendance marked");
+}
 
 export async function checkBiometricSupport() {
   if (!window.PublicKeyCredential) {
