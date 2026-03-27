@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/jpeg" href="static/logo.jpeg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartAttend — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="login.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060a14;--panel:#0d1526;--border:#162035;--accent:#00e5b4;--accent2:#3d8eff;--text:#edf2ff;--muted:#5c7499;--muted2:#8ba3c7;--danger:#ff6b6b}
+html,body{min-height:100vh}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+.bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,229,180,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,180,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}
+.orb1{width:500px;height:500px;background:radial-gradient(circle,rgba(0,229,180,.1),transparent 70%);top:-150px;left:-150px}
+.orb2{width:400px;height:400px;background:radial-gradient(circle,rgba(61,142,255,.08),transparent 70%);bottom:-100px;right:-100px}
+.wrap{position:relative;z-index:1;width:100%;max-width:420px;margin:0 auto;padding:48px 20px 60px;animation:fadeUp .6s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.brand{text-align:center;margin-bottom:32px}
+.brand img{width:72px;height:72px;border-radius:18px;background:#111;padding:8px;object-fit:contain;margin:0 auto 14px;display:block;box-shadow:0 0 32px rgba(0,229,180,.2)}
+.brand h1{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand p{color:var(--muted2);font-size:.875rem;margin-top:6px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:32px}
+.card h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.card-hint{color:var(--muted);font-size:.8rem;margin-bottom:22px}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;font-weight:500}
+input{width:100%;background:#0a1020;border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,180,.1)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:48px}
+.eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);transition:color .2s;display:flex;align-items:center}
+.eye-btn:hover{color:var(--accent)}
+.eye-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;color:#060a14;font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity .2s,transform .1s}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted2);font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:10px;transition:border-color .2s,color .2s}
+.btn-secondary:hover{border-color:var(--accent2);color:var(--accent2)}
+.error{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:#ff8a8a;border-radius:10px;padding:11px 16px;font-size:.85rem;margin-bottom:16px;display:none}
+.success{background:rgba(0,229,180,.08);border:1px solid rgba(0,229,180,.25);color:var(--accent);border-radius:10px;padding:11px 16px;font-size:.85rem;margin-bottom:16px;display:none;align-items:center;gap:8px}
+.form-links{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:-4px;margin-bottom:6px}
+.text-link{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:.82rem;padding:0;text-decoration:none}
+.text-link:hover{text-decoration:underline}
+.role-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:24px}
+.role-btn{padding:12px 8px;border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:all .2s;text-align:center}
+.role-btn:hover{transform:translateY(-2px)}
+.role-btn .r-icon{font-size:1.5rem;display:block;margin-bottom:6px}
+.role-btn .r-name{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;display:block}
+.role-btn.student{border-color:rgba(0,229,180,.2);background:rgba(0,229,180,.04)}
+.role-btn.student:hover,.role-btn.student.active{border-color:var(--accent);background:rgba(0,229,180,.12);box-shadow:0 0 16px rgba(0,229,180,.15)}
+.role-btn.student .r-name{color:var(--accent)}
+.role-btn.faculty{border-color:rgba(61,142,255,.2);background:rgba(61,142,255,.04)}
+.role-btn.faculty:hover,.role-btn.faculty.active{border-color:var(--accent2);background:rgba(61,142,255,.12);box-shadow:0 0 16px rgba(61,142,255,.15)}
+.role-btn.faculty .r-name{color:var(--accent2)}
+.role-btn.admin{border-color:rgba(255,181,71,.2);background:rgba(255,181,71,.04)}
+.role-btn.admin:hover,.role-btn.admin.active{border-color:#ffb547;background:rgba(255,181,71,.12);box-shadow:0 0 16px rgba(255,181,71,.15)}
+.role-btn.admin .r-name{color:#ffb547}
+.loading{display:inline-block;width:14px;height:14px;border:2px solid rgba(6,10,20,.4);border-top-color:#060a14;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="wrap">
+  <div class="brand">
+    <img src="static/logo.jpeg" alt="SmartAttend">
+    <h1>SmartAttend</h1>
+    <p>Intelligent Attendance Management</p>
+  </div>
+  <div class="card">
+    <div class="role-btns">
+      <button class="role-btn student" onclick="selectRole(this)">
+        <span class="r-icon">🎓</span>
+        <span class="r-name">Student</span>
+      </button>
+      <button class="role-btn faculty" onclick="selectRole(this)">
+        <span class="r-icon">👨‍🏫</span>
+        <span class="r-name">Faculty</span>
+      </button>
+      <button class="role-btn admin" onclick="selectRole(this)">
+        <span class="r-icon">🛡️</span>
+        <span class="r-name">Admin</span>
+      </button>
+    </div>
+    <h2>Sign in to continue</h2>
+    <p class="card-hint">Contact your admin if you don't have an account. First-time student and faculty logins will be asked to register fingerprint or face before continuing.</p>
+
+    <div class="error" id="error"></div>
+    <div class="success" id="success">
+      <span>✅</span><span id="success-text">Signed in successfully!</span>
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="l-email" placeholder="you@college.in" autofocus>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="l-pass" placeholder="••••••••">
+        <button class="eye-btn" id="eye-btn" type="button" aria-label="Show password">
+          <svg id="eye-open" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg id="eye-closed" viewBox="0 0 24 24" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="btn" id="login-btn" onclick="login()">Sign In →</button>
+    <button class="btn-secondary" id="back-btn" type="button" onclick="window.location.href='index.html'">Back</button>
+  </div>
+</div>
+
+<script>
+// Eye toggle
+document.getElementById('eye-btn').addEventListener('click', function() {
+  const inp = document.getElementById('l-pass');
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  document.getElementById('eye-open').style.display = isHidden ? 'none' : 'block';
+  document.getElementById('eye-closed').style.display = isHidden ? 'block' : 'none';
+});
+
+// Highlight role button only — no auto-fill
+window.selectRole = (btn) => {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+};
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') window.doLogin && window.doLogin();
+});
+
+
+</script>
+
+<script type="module">
+import {
+  signInWithEmailAndPassword,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-config.js";
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  const snap = await get(ref(db, `users/${user.uid}`));
+  if (snap.exists()) redirect(snap.val().role);
+});
+
+function redirect(role) {
+  const pages = { faculty: 'faculty.html', student: 'student.html', admin: 'admin.html' };
+  window.location.href = pages[role] || 'student.html';
+}
+
+function showErr(msg) {
+  document.getElementById('success').style.display = 'none';
+  const el = document.getElementById('error');
+  el.textContent = msg; el.style.display = 'block';
+}
+function showSuccess(name, role) {
+  document.getElementById('error').style.display = 'none';
+  document.getElementById('success-text').textContent = `Welcome back, ${name}! Redirecting as ${role}…`;
+  document.getElementById('success').style.display = 'flex';
+}
+
+window.doLogin = async () => {
+  document.getElementById('error').style.display = 'none';
+  document.getElementById('success').style.display = 'none';
+  const email = document.getElementById('l-email').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  if (!email || !pass) return showErr('Please fill in all fields.');
+  const btn = document.getElementById('login-btn');
+  btn.innerHTML = '<span class="loading"></span>Signing in…'; btn.disabled = true;
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const snap = await get(ref(db, `users/${cred.user.uid}`));
+    if (snap.exists()) {
+      const userData = snap.val();
+      showSuccess(userData.name, userData.role);
+      setTimeout(() => redirect(userData.role), 1200);
+    } else {
+      showErr('Account not found. Contact your admin.');
+      btn.innerHTML = 'Sign In →'; btn.disabled = false;
+    }
+  } catch(e) {
+    showErr(e.code === 'auth/invalid-credential' ? 'Wrong email or password.' : e.message);
+    btn.innerHTML = 'Sign In →'; btn.disabled = false;
+  }
+};
+
+document.getElementById('login-btn').addEventListener('click', window.doLogin);
+</script>
+</body>
+</html>
