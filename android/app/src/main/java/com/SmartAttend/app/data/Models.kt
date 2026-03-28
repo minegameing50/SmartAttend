@@ -6,7 +6,9 @@ data class UserProfile(
     val email: String = "",
     val role: String = "",
     val rollNo: String = "",
-    val orgTag: String = ""
+    val orgTag: String = "",
+    val createdAt: String = "",
+    val biometrics: BiometricProfile? = null
 )
 
 data class FingerprintProfile(

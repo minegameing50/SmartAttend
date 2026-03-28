@@ -59,6 +59,10 @@ async function requireAdminRequest(req) {
 
 app.use(cors());
 app.use(express.json());
+app.use((req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  next();
+});
 app.use(express.static(root));
 
 app.get("/healthz", (_req, res) => {
@@ -95,8 +99,10 @@ app.post("/api/admin/delete-user", async (req, res) => {
     }
 
     await adminApp.auth().deleteUser(userId);
+    console.log(`Deleted Firebase Auth user ${userId} for admin ${requester.uid}`);
     res.json({ ok: true });
   } catch (error) {
+    console.error("Delete user API failed:", error);
     const statusCode = error.statusCode || 500;
     res.status(statusCode).json({ error: error.message || "Unable to delete Firebase Auth user." });
   }

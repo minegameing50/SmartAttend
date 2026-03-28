@@ -1,13 +1,17 @@
 package com.SmartAttend.app.data
 
 import android.content.Context
+import android.util.Log
 import com.SmartAttend.app.BuildConfig
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import java.io.IOException
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URI
@@ -19,6 +23,10 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 class FirebaseRepository {
+    companion object {
+        private const val TAG = "SmartAttendDelete"
+    }
+
     private val auth = Firebase.auth
     private val database = Firebase.database.reference
 
@@ -694,41 +702,49 @@ class FirebaseRepository {
     private suspend fun deleteManagedAuthAccount(userId: String) {
         val currentUser = auth.currentUser ?: error("Admin session expired.")
         val idToken = currentUser.getIdToken(false).await().token ?: error("Unable to authenticate admin request.")
-        val connection = (URL(resolveAdminDeleteUrl()).openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            connectTimeout = 15000
-            readTimeout = 15000
-            doOutput = true
-            setRequestProperty("Authorization", "Bearer $idToken")
-            setRequestProperty("Content-Type", "application/json; charset=utf-8")
-        }
-
-        try {
-            val requestBody = JSONObject().put("userId", userId).toString()
-            connection.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
-                writer.write(requestBody)
+        withContext(Dispatchers.IO) {
+            val deleteUrl = resolveAdminDeleteUrl()
+            Log.d(TAG, "Deleting managed account via $deleteUrl for userId=$userId")
+            val connection = (URL(deleteUrl).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 30000
+                readTimeout = 45000
+                doOutput = true
+                setRequestProperty("Authorization", "Bearer $idToken")
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("Accept", "application/json")
             }
 
-            val stream = if (connection.responseCode in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream
-            }
-            val responseText = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            try {
+                val requestBody = JSONObject().put("userId", userId).toString()
+                connection.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+                    writer.write(requestBody)
+                }
 
-            if (connection.responseCode !in 200..299) {
-                val message = runCatching {
-                    JSONObject(responseText).optString("error").takeIf { it.isNotBlank() }
-                }.getOrNull() ?: "Unable to delete Firebase sign-in account."
-                error(message)
+                val responseCode = connection.responseCode
+                val stream = if (responseCode in 200..299) {
+                    connection.inputStream
+                } else {
+                    connection.errorStream
+                }
+                val responseText = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+                Log.d(TAG, "Delete API response code=$responseCode body=$responseText")
+
+                if (responseCode !in 200..299) {
+                    val message = runCatching {
+                        JSONObject(responseText).optString("error").takeIf { it.isNotBlank() }
+                    }.getOrNull() ?: "Unable to delete Firebase sign-in account."
+                    error(message)
+                }
+            } catch (error: IOException) {
+                Log.e(TAG, "Delete API network failure for userId=$userId", error)
+                throw IllegalStateException(
+                    "Unable to reach the admin delete API. ${error.message ?: "Check the server URL and backend configuration."}",
+                    error
+                )
+            } finally {
+                connection.disconnect()
             }
-        } catch (error: Exception) {
-            throw IllegalStateException(
-                "Unable to reach the admin delete API. ${error.message ?: "Check the server URL and backend configuration."}",
-                error
-            )
-        } finally {
-            connection.disconnect()
         }
     }
 
