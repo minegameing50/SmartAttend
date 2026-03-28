@@ -418,6 +418,9 @@ onAuthStateChanged(auth, (user) => {
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { ref, get, set, push, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { auth, db, SITE_URL } from "./firebase-config.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, get, set, push, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db, SITE_URL } from "./firebase-config.js";
 import { getBiometricProfile, hasAnyBiometric, hasFace, hasFingerprint, registerFace, registerFingerprint, verifyFingerprint } from "./static/biometric.js";
 let me = null;
 let biometricProfile = {};
@@ -429,6 +432,35 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  try {
+    const userSnap = await get(ref(db, `users/${user.uid}`));
+    if (!userSnap.exists()) {
+      throw new Error("User profile not found.");
+    }
+
+    const profile = userSnap.val();
+    if (profile.role !== "faculty") {
+      window.location.href = profile.role === "student" ? "student.html" : "admin.html";
+      return;
+    }
+
+    me = { uid: user.uid, ...profile };
+    biometricProfile = await getBiometricProfile(db, me);
+    biometricRequired = !hasAnyBiometric(biometricProfile);
+
+    document.getElementById("nav-name").textContent = me.name || user.email || "Faculty";
+    document.getElementById("dsub").textContent = `Welcome back, ${me.name || "Faculty"}.`;
+    refreshBiometricSetupUI();
+    await Promise.all([
+      loadFacultyAttendanceStatus(),
+      loadClasses(),
+      updateTodayCount()
+    ]);
+    document.getElementById("lov").style.display = "none";
+
+    if (biometricRequired) {
+      document.getElementById("bio-setup-mo").classList.add("open");
+    }
   try {
     const userSnap = await get(ref(db, `users/${user.uid}`));
     if (!userSnap.exists()) {
