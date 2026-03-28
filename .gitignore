@@ -1,0 +1,16 @@
+node_modules/
+npm-debug.log*
+
+android/.gradle/
+android/.gradle-user/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+
+.idea/
+*.log
+*.keystore
+*.jks
+service-account.json
+*.json.key

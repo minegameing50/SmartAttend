@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "468349685878",
+    "firebase_url": "https://student-attend-b28a8-default-rtdb.firebaseio.com",
+    "project_id": "student-attend-b28a8",
+    "storage_bucket": "student-attend-b28a8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:468349685878:android:315fd4827eb85f36550f57",
+        "android_client_info": {
+          "package_name": "com.SmartAttend.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDT3bEYt5AtMz_w6TlOwUInM4DnmcU_6TM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

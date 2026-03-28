@@ -225,15 +225,10 @@ onAuthStateChanged(auth, (user) => {
 </script>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-import { getDatabase, ref, get, push } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, get, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-config.js";
 import { getBiometricProfile, hasAnyBiometric, hasFace, hasFingerprint, registerFace, registerFingerprint, verifyFingerprint } from "./static/biometric.js";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
 let me = null;
 let html5QrcodeScanner = null;
 let chooserMethod = null;
@@ -249,15 +244,39 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  console.log("Logged in:", user.email);
-
   try {
-    // your existing code here
+    const userSnap = await get(ref(db, `users/${user.uid}`));
+    if (!userSnap.exists()) {
+      throw new Error("User profile not found.");
+    }
+
+    const profile = userSnap.val();
+    if (profile.role !== "student") {
+      window.location.href = profile.role === "faculty" ? "faculty.html" : "admin.html";
+      return;
+    }
+
+    me = { uid: user.uid, ...profile };
+    biometricProfile = await getBiometricProfile(db, me);
+    biometricRequired = !hasAnyBiometric(biometricProfile);
+    pendingRedirect = sessionStorage.getItem("scanAfterLogin");
+
+    document.getElementById("nav-name").textContent = me.name || user.email || "Student";
+    refreshBiometricSetupUI();
+    await loadMyClasses();
+    document.getElementById("lov").style.display = "none";
+
+    if (biometricRequired) {
+      document.getElementById("bio-setup-mo").classList.add("open");
+    } else if (pendingRedirect) {
+      const next = pendingRedirect;
+      pendingRedirect = null;
+      sessionStorage.removeItem("scanAfterLogin");
+      window.location.href = next;
+    }
   } catch (e) {
     console.error("ERROR:", e);
     alert("Error loading data");
-    
-    // 🔥 IMPORTANT fallback
     window.location.href = "login.html";
   }
 });

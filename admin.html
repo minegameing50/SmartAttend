@@ -186,9 +186,9 @@ select option{background:var(--panel2)}
         </div>
 
         <div class="form-group">
-          <label>New Password</label>
+          <label>Reset Method</label>
           <div class="pw-wrap">
-            <input type="password" id="new-pass" placeholder="Enter new password (Min 6 characters)">
+            <input type="text" id="new-pass" value="Email reset link" readonly>
             
             <button class="eye-btn" id="new-eye" type="button">
               <svg id="new-eye-open" viewBox="0 0 24 24">
@@ -204,7 +204,7 @@ select option{background:var(--panel2)}
           </div>
         </div>
       </div>
-      <button class="btn-submit" onclick="adminChangePassword()">Change Password</button>
+      <button class="btn-submit" onclick="adminChangePassword()">Send Reset Email</button>
     </div>
   </div>
 
@@ -316,46 +316,32 @@ onAuthStateChanged(auth, (user) => {
 });
 </script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-import { getDatabase, ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js";
-import { initializeApp as initApp2 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getAuth as getAuth2, createUserWithEmailAndPassword as createUser2 } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  onAuthStateChanged,
+  signOut,
+  getAuth as getAuth2,
+  createUserWithEmailAndPassword as createUser2,
+  sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, get, set, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { firebaseConfig, auth, db } from "./firebase-config.js";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-const app2 = initApp2(firebaseConfig, 'secondary');
+const app2 = initializeApp(firebaseConfig, "secondary");
 const auth2 = getAuth2(app2);
 window.adminChangePassword = async () => {
   const email = document.getElementById('reset-email').value.trim();
-  const newPass = document.getElementById('new-pass').value;
 
-  if (!email || !newPass) {
-    alert("Fill all fields");
+  if (!email) {
+    alert("Enter a user email");
     return;
   }
 
   try {
-    const res = await fetch("http://localhost:3000/change-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email, newPassword: newPass })
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Password updated successfully");
-    } else {
-      alert(data.error);
-    }
-
+    await sendPasswordResetEmail(auth, email);
+    alert(`Password reset email sent to ${email}. Firebase requires the user to finish the reset from that email.`);
   } catch (err) {
-    alert("Server error");
+    alert(err.message);
   }
 };
 

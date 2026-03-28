@@ -42,17 +42,9 @@ p{color:var(--muted2);font-size:.875rem;line-height:1.6;margin-bottom:20px}
 
 <script type="module">
 
-// 🔥 BIOMETRIC IMPORT
-import { biometricLogin } from "./static/biometric.js";
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-import { getDatabase, ref, get, push, update } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { ref, get, push, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { auth, db } from "./firebase-config.js";
 
 const card = document.getElementById('card');
 const stepEl = document.getElementById('step');
@@ -84,13 +76,6 @@ else {
     if (!user) {
       sessionStorage.setItem('scanAfterLogin', window.location.href);
       show(`<div class="icon">🔐</div><h1>Login Required</h1><p>Sign in first to mark your attendance.</p>${btnP('login.html','Sign In')}`);
-      return;
-    }
-
-    // 🔥 BIOMETRIC CHECK (MAIN FIX)
-    const ok = await biometricLogin();
-    if (!ok) {
-      show(`<div class="icon">🔒</div><h1>Verification Failed</h1><p>Biometric authentication is required.</p>${btnS('student.html','Go Home')}`);
       return;
     }
 

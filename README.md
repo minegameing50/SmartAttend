@@ -163,6 +163,76 @@ users/
 3. Source: **Deploy from branch → main → / (root)**
 4. ✅ Live at `https://USERNAME.github.io/SmartAttend/`
 
+### 6. Deploy Firebase Cloud Function for Admin Account Deletion
+This is required if you want the Android app to fully delete managed users from Firebase Authentication on any phone.
+
+1. Install Firebase CLI:
+```bash
+npm install -g firebase-tools
+```
+
+2. Login and select your Firebase project:
+```bash
+firebase login
+firebase use student-attend-b28a8
+```
+
+3. Install function dependencies:
+```bash
+cd functions
+npm install
+cd ..
+```
+
+4. Deploy the function:
+```bash
+firebase deploy --only functions
+```
+
+5. The Android app will call:
+```text
+https://us-central1-student-attend-b28a8.cloudfunctions.net/deleteAdminManagedUser
+```
+
+If you deploy to another region, set that region in `android/local.properties`:
+```properties
+smartAttend.adminDeleteFunctionRegion=asia-south1
+```
+
+### 7. Use Render Instead of Firebase Functions
+If you do not want to upgrade Firebase to Blaze, deploy the existing `server.js` backend to Render.
+
+1. Push this repo to GitHub.
+2. In Render, create a new `Web Service`.
+3. Connect your GitHub repo.
+4. Use these settings:
+```text
+Root Directory: .
+Build Command: npm install
+Start Command: npm start
+```
+5. Add these Render environment variables:
+```text
+FIREBASE_DATABASE_URL=https://student-attend-b28a8-default-rtdb.firebaseio.com
+FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+```
+
+`FIREBASE_SERVICE_ACCOUNT_JSON` must be the full contents of your Firebase service-account JSON in one line.
+
+6. After Render deploys, verify:
+```text
+https://YOUR-SERVICE.onrender.com/healthz
+```
+
+7. In [local.properties](/C:/Users/atuld/SmartAttend/android/local.properties), set:
+```properties
+smartAttend.adminApiBaseUrl=https://YOUR-SERVICE.onrender.com
+```
+
+8. Rebuild the Android app in Android Studio.
+
+After that, any phone can use full admin-managed deletion through your Render backend.
+
 ---
 
 ## 🔒 Security
